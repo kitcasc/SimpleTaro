@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>✨  mystic tarot · 神秘塔羅占卜</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="moon"></div>
+
+<header class="hero">
+  <div class="hero-badge">RIDER-WAITE · 78 CARDS · 真實牌圖</div>
+  <h1>🔮 神秘塔羅占卜</h1>
+  <p class="subtitle">選擇牌陣 → 靜心默念問題 → 逐張翻牌 → 一鍵複製 prompt 去任何 AI 解牌</p>
+</header>
+
+<main class="container">
+  <!-- 步驟一 -->
+  <section class="panel">
+    <h2><span class="step">1</span> 輸入你的問題 <small>（會一起帶入 AI 解牌 prompt）</small></h2>
+    <textarea id="question" rows="2" placeholder="例如：我和他的感情未來三個月會如何發展？我該轉職嗎？"></textarea>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="allowReversed" checked /> 包含逆位（更精準）</label>
+    </div>
+  </section>
+
+  <!-- 步驟二 -->
+  <section class="panel">
+    <h2><span class="step">2</span> 選擇要抽幾張牌</h2>
+    <div class="spread-picker" id="spreadPicker">
+      <button class="spread-btn active" data-count="1">
+        <b>1 張</b><span>單張指引</span><em>每日運勢 · 是非題</em>
+      </button>
+      <button class="spread-btn" data-count="3">
+        <b>3 張</b><span>過去 · 現在 · 未來</span><em>最經典的三張牌</em>
+      </button>
+      <button class="spread-btn" data-count="5">
+        <b>5 張</b><span>十字牌陣</span><em>現況 / 挑戰 / 過去 / 未來 / 指引</em>
+      </button>
+      <button class="spread-btn" data-count="10">
+        <b>10 張</b><span>塞爾特十字</span><em>最完整的凱爾特十字</em>
+      </button>
+    </div>
+    <div class="spread-desc" id="spreadDesc"></div>
+    <div class="actions">
+      <button id="drawBtn" class="btn-gold">✨ 洗牌並抽牌</button>
+      <button id="flipAllBtn" class="btn-ghost" disabled>一鍵全部翻開</button>
+      <button id="resetBtn" class="btn-ghost" disabled>重新洗牌</button>
+    </div>
+  </section>
+
+  <!-- 牌桌 -->
+  <section class="panel table-panel">
+    <h2><span class="step">3</span> 點擊卡牌逐張翻開 <small id="progressHint">尚未抽牌</small></h2>
+    <div id="table" class="table spread-1">
+      <div class="empty-tip">🌙 請先按「洗牌並抽牌」，牌會以動畫發到桌上，點牌翻面。<br/>使用偉特塔羅 78 張真實牌圖（含正逆位）。</div>
+    </div>
+  </section>
+
+  <!-- prompt -->
+  <section class="panel" id="promptPanel" hidden>
+    <h2><span class="step">4</span> 複製去任何 AI 解牌 <small>ChatGPT / Claude / Gemini 都可</small></h2>
+    <div class="prompt-toolbar">
+      <button id="copyBtn" class="btn-gold">📋 複製解牌 Prompt</button>
+      <button id="exportBtn" class="btn-gold btn-pdf">📄 匯出 PDF</button>
+      <span id="copyTip"></span>
+    </div>
+    <pre id="promptOutput"></pre>
+  </section>
+
+  <footer>
+    牌圖來源：Rider-Waite 1909 公有領域（via sixseeds tarot-api CDN）· 僅供娛樂與自我覺察參考
+  </footer>
+</main>
+
+<!-- 放大檢視 -->
+<div id="zoom" class="zoom" hidden>
+  <div class="zoom-card">
+    <img id="zoomImg" src="" alt="" />
+    <div class="zoom-info">
+      <h3 id="zoomTitle"></h3>
+      <p id="zoomKw"></p>
+      <button id="zoomClose" class="btn-ghost">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- 匯出 PDF：是否含解牌結果 -->
+<div id="exportModal" class="modal" hidden>
+  <div class="modal-card">
+    <h3>📄 匯出 PDF</h3>
+    <p>要把 AI 的解牌結果一起匯出到 PDF 嗎？</p>
+    <p class="modal-sub">選擇「是」的話，下一頁可以貼上 AI 給你的解牌文字，會精美排版進 PDF。<br/>選擇「否」則只匯出問題、牌陣、牌圖與 prompt。</p>
+    <div class="modal-actions">
+      <button id="exportNoBtn" class="btn-ghost">否，直接匯出</button>
+      <button id="exportYesBtn" class="btn-gold">是，我要貼上解牌</button>
+    </div>
+    <button class="modal-close" id="exportCancel">✕</button>
+  </div>
+</div>
+
+<!-- 貼上 AI 解牌結果 -->
+<div id="interpretModal" class="modal" hidden>
+  <div class="modal-card wide">
+    <h3>✨ 貼上 AI 的解牌結果</h3>
+    <p class="modal-sub">去 ChatGPT / Claude / Gemini 解牌後，把回答全文貼在下方，再按確認。接著在列印視窗選「另存為 PDF」即可。</p>
+    <textarea id="aiResultInput" rows="10" placeholder="在此貼上 AI 的解牌結果…"></textarea>
+    <div class="modal-actions">
+      <button id="interpretBack" class="btn-ghost">上一步</button>
+      <button id="interpretConfirm" class="btn-gold">確認並列印 PDF</button>
+    </div>
+    <button class="modal-close" id="interpretCancel">✕</button>
+  </div>
+</div>
+
+<!-- PDF 報表（列印時才顯示，平時隱藏） -->
+<div id="pdfReportWrap" aria-hidden="true">
+  <div id="pdfReport"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
